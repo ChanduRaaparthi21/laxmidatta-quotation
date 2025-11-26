@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaxmiDatta Interiors - Quotation Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Control Panel (Hidden in Print) -->
+        <div class="control-panel no-print">
+            <h1>Quotation Generator</h1>
+            <div class="actions">
+                <div class="add-section-group">
+                    <select id="sectionTypeSelect" class="form-select">
+                        <option value="Custom">Custom Section</option>
+                        <option value="Master Bedroom">Master Bedroom</option>
+                        <option value="Children's Bedroom">Children's Bedroom</option>
+                        <option value="Kitchen">Kitchen</option>
+                        <option value="Living/Dining">Living/Dining</option>
+                        <option value="Pooja Room">Pooja Room</option>
+                        <option value="False Ceiling">False Ceiling</option>
+                    </select>
+                    <button onclick="handleAddSection()" class="btn btn-secondary"><i class="fas fa-plus"></i>
+                        Add</button>
+                </div>
+                <button onclick="generatePDF()" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Download
+                    PDF</button>
+            </div>
+        </div>
+
+        <!-- Quotation Paper -->
+        <div id="quotation-paper" class="paper">
+
+            <!-- Header -->
+            <header class="header">
+                <div class="header-top">
+                    <div class="logo-container">
+                        <img src="logo.png" alt="LaxmiDatta Interiors Logo" class="logo-img">
+                    </div>
+                    <div class="company-name">
+                        <div class="brand-main">LAXMIDATTA</div>
+                        <div class="brand-sub">INTERIORS</div>
+                    </div>
+                    <div class="qr-code">
+                        <img src="qr-code.png" alt="QR Code" class="qr-img">
+                    </div>
+                </div>
+                <div class="header-bottom">
+                    <div class="contact-info">
+                        <div class="contact-name">P. BHANU CHANDER</div>
+                        <div class="contact-phone">Ph: 9550855938, 7207000071</div>
+                        <div class="contact-address">Gajularamaram, Hyd</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Customer Details -->
+            <section class="customer-details">
+                <div class="input-group full-width">
+                    <div id="customerName" class="editable-field" contenteditable="true"
+                        data-placeholder="Enter Customer Name">MR. KIRAN KUMAR</div>
+                </div>
+            </section>
+
+            <!-- Dynamic Content -->
+            <div id="quotation-content">
+                <!-- Sections will be added here by JS -->
+            </div>
+
+            <!-- Summary & Totals -->
+            <section class="summary-section">
+                <div class="summary-row total-highlight">
+                    <div class="label">TOTAL AMOUNT</div>
+                    <div class="value" id="grand-total">0.0</div>
+                </div>
+
+                <!-- Additional Costs -->
+                <div id="additional-costs">
+                    <!-- Dynamic additional costs -->
+                </div>
+                <div class="add-cost-btn no-print" onclick="addAdditionalCost()">+ Add Extra Cost</div>
+
+                <!-- Negotiation/Discount -->
+                <div class="summary-row negotiation">
+                    <div class="label">NEGOTIATION / DISCOUNT</div>
+                    <div class="value">
+                        <input type="number" id="negotiation-amount" value="0" onchange="updateNegotiation(this.value)"
+                            style="width:100%; border:none; text-align:right; font-weight:700; background:transparent; outline:none;">
+                    </div>
+                </div>
+
+                <div class="summary-row final-total">
+                    <div class="label">GRAND FINAL AMOUNT</div>
+                    <div class="value" id="final-amount">0.0</div>
+                </div>
+            </section>
+
+            <!-- Footer / Terms -->
+            <footer class="footer">
+                <div class="terms-box">
+                    <h3>Material Description:</h3>
+                    <ul class="editable-list" contenteditable="true">
+                        <li>Work type of hand made work</li>
+                        <li>Material is used are all of ISI Standards.</li>
+                        <li>Plywood used is of <span class="highlight-red">GREEN OPTIAMA G</span></li>
+                        <li>Laminate used for inner finishing is of 0.8mm Fabric laminate.</li>
+                        <li>Outside Finishing branded laminate used is of 1mm</li>
+                        <li>Hardware & glue used will be of branded company</li>
+                        <li>Kitchen baskets used of Branded Company <span class="highlight-red">ebco.nimmi</span></li>
+                    </ul>
+                </div>
+
+                <div class="terms-box">
+                    <h3>Note:</h3>
+                    <ul class="editable-list" contenteditable="true">
+                        <li>If any Extra work done, it will be charged as per the SFT.</li>
+                        <li>If any Electrical work done, it will be charged extra.</li>
+                        <li>If any granite work done, it will be charged as per sft.</li>
+                        <li>It may take minimum working days 55, maximum 75 days. (only working days)</li>
+                        <li>It's only cleaning no deep cleaning</li>
+                    </ul>
+                </div>
+
+                <div class="terms-box">
+                    <h3>Payment Terms:</h3>
+                    <ul class="editable-list" contenteditable="true">
+                        <li>50% Advance against Work Order.</li>
+                        <li>35% Payment on the time of Material Shifted to the site.</li>
+                        <li>10% Payment on the time of handle fitment.</li>
+                        <li>Remaining Payment on work completion.</li>
+                    </ul>
+                </div>
+
+                <div class="signatures">
+                    <div class="sig-block">Customer</div>
+                    <div class="sig-block">LaxmiDatta interiors</div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
