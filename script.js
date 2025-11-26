@@ -1,19 +1,17 @@
+function generateId() {
+    return Math.random().toString(36).substr(2, 9);
+}
+
 // State
 let sections = [
-    {
-        id: 1,
-        title: "Living/Dining",
-        rows: [
-            { id: 1, item: "Main door wooden panel", h: 0, w: 0, price: 18500, isFixed: true },
-            { id: 2, item: "Shoe Box", h: 32, w: 72, price: 1350, isFixed: false },
-        ]
-    }
+    { id: generateId(), title: "Living/Dining", rows: [{ id: generateId(), item: "", h: 0, w: 0, price: 0, isFixed: false }] },
+    { id: generateId(), title: "Master Bedroom", rows: [{ id: generateId(), item: "", h: 0, w: 0, price: 0, isFixed: false }] },
+    { id: generateId(), title: "Children's Bedroom", rows: [{ id: generateId(), item: "", h: 0, w: 0, price: 0, isFixed: false }] },
+    { id: generateId(), title: "Kitchen", rows: [{ id: generateId(), item: "", h: 0, w: 0, price: 0, isFixed: false }] },
+    { id: generateId(), title: "Pooja Room", rows: [{ id: generateId(), item: "", h: 0, w: 0, price: 0, isFixed: false }] }
 ];
 
-let additionalCosts = [
-    { id: 1, name: "PVC ceiling balcony", value: 19200 },
-    { id: 2, name: "Gypsum ceiling", value: 130000 },
-];
+let additionalCosts = [];
 
 let negotiationAmount = 0;
 
@@ -60,11 +58,61 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.body.appendChild(datalist);
 
+    // Load saved data from localStorage
+    loadFromLocalStorage();
+
+    // Save customer name on change
+    const customerNameEl = document.getElementById('customerName');
+    if (customerNameEl) {
+        customerNameEl.addEventListener('input', saveToLocalStorage);
+        customerNameEl.addEventListener('blur', saveToLocalStorage);
+    }
+
     render();
 });
 
-function generateId() {
-    return Math.random().toString(36).substr(2, 9);
+// Save to localStorage
+function saveToLocalStorage() {
+    const data = {
+        sections: sections,
+        additionalCosts: additionalCosts,
+        negotiationAmount: negotiationAmount,
+        customerName: document.getElementById('customerName')?.textContent || ''
+    };
+    localStorage.setItem('quotationData_v3', JSON.stringify(data));
+}
+
+// Load from localStorage
+function loadFromLocalStorage() {
+    const saved = localStorage.getItem('quotationData_v3');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            sections = data.sections || sections;
+            additionalCosts = data.additionalCosts || additionalCosts;
+            negotiationAmount = data.negotiationAmount || 0;
+
+            // Restore customer name
+            if (data.hasOwnProperty('customerName')) {
+                setTimeout(() => {
+                    const customerNameEl = document.getElementById('customerName');
+                    if (customerNameEl) {
+                        customerNameEl.textContent = data.customerName;
+                    }
+                }, 100);
+            }
+
+            // Restore negotiation amount
+            setTimeout(() => {
+                const negotiationInput = document.getElementById('negotiation-amount');
+                if (negotiationInput) {
+                    negotiationInput.value = negotiationAmount;
+                }
+            }, 100);
+        } catch (e) {
+            console.error('Error loading saved data:', e);
+        }
+    }
 }
 
 function render() {
@@ -185,6 +233,7 @@ function renderAdditionalCosts(baseTotal) {
 function updateNegotiation(val) {
     negotiationAmount = parseFloat(val) || 0;
     render();
+    saveToLocalStorage();
 }
 
 function handleAddSection() {
@@ -209,17 +258,20 @@ function addSection(title = "New Section Title") {
         ]
     });
     render();
+    saveToLocalStorage();
 }
 
 function removeSection(index) {
     if (confirm('Delete this entire section?')) {
         sections.splice(index, 1);
         render();
+        saveToLocalStorage();
     }
 }
 
 function updateSectionTitle(index, val) {
     sections[index].title = val;
+    saveToLocalStorage();
 }
 
 function addRow(sectionIndex) {
@@ -232,11 +284,13 @@ function addRow(sectionIndex) {
         isFixed: false
     });
     render();
+    saveToLocalStorage();
 }
 
 function removeRow(sIndex, rIndex) {
     sections[sIndex].rows.splice(rIndex, 1);
     render();
+    saveToLocalStorage();
 }
 
 function updateRow(sIndex, rIndex, field, val) {
@@ -247,11 +301,13 @@ function updateRow(sIndex, rIndex, field, val) {
         row[field] = val;
     }
     render();
+    saveToLocalStorage();
 }
 
 function addAdditionalCost() {
     additionalCosts.push({ id: generateId(), name: "New Cost", value: 0 });
     render();
+    saveToLocalStorage();
 }
 
 function updateCost(index, field, val) {
@@ -261,11 +317,13 @@ function updateCost(index, field, val) {
         additionalCosts[index].name = val;
     }
     render();
+    saveToLocalStorage();
 }
 
 function removeCost(index) {
     additionalCosts.splice(index, 1);
     render();
+    saveToLocalStorage();
 }
 
 // PDF Generation
