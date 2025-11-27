@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </head>
 
@@ -36,6 +40,11 @@
                 </div>
                 <button onclick="generatePDF()" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Download
                     PDF</button>
+                <button onclick="triggerFileUpload()" class="btn btn-secondary"
+                    style="background-color: #28a745; color: white;"><i class="fas fa-file-upload"></i> Upload
+                    PDF</button>
+                <input type="file" id="pdf-upload" accept=".pdf" style="display: none;"
+                    onchange="handlePdfUpload(this)">
             </div>
         </div>
 

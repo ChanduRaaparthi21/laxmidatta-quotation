@@ -330,6 +330,9 @@ function removeCost(index) {
 function generatePDF() {
     const element = document.getElementById('quotation-paper');
 
+    // Add class to hide UI elements
+    document.body.classList.add('generating-pdf');
+
     const inputs = element.querySelectorAll('input');
     inputs.forEach(input => {
         input.setAttribute('value', input.value);
@@ -338,16 +341,80 @@ function generatePDF() {
     const customerNameEl = document.getElementById('customerName');
     let customerName = customerNameEl.textContent.trim() || 'Quotation';
 
+    // Prepare data to embed
+    const appState = {
+        sections: sections,
+        additionalCosts: additionalCosts,
+        negotiationAmount: negotiationAmount,
+        customerName: customerName
+    };
+    const serializedData = JSON.stringify(appState);
+    const hiddenDataString = `<<<DATA_START${serializedData}DATA_END>>>`;
+
     customerName = customerName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
     const filename = `${customerName}_Quotation.pdf`;
+
+    // Handle Page Breaks
+    const pageHeightMM = 297;
+    const pageWidthMM = 210;
+    const pageHeightPx = (element.scrollWidth * pageHeightMM) / pageWidthMM;
+
+    const spacers = [];
+    let currentHeight = 0;
+
+    const blocks = [];
+
+    const header = element.querySelector('.header');
+    if (header) blocks.push(header);
+
+    const customerDetails = element.querySelector('.customer-details');
+    if (customerDetails) blocks.push(customerDetails);
+
+    const sectionContainer = document.getElementById('quotation-content');
+    if (sectionContainer) {
+        const sectionDivs = sectionContainer.querySelectorAll('.quotation-section');
+        sectionDivs.forEach(div => blocks.push(div));
+    }
+
+    const summary = element.querySelector('.summary-section');
+    if (summary) blocks.push(summary);
+
+    const footer = element.querySelector('.footer');
+    if (footer) blocks.push(footer);
+
+    blocks.forEach(block => {
+        const blockHeight = block.offsetHeight;
+        const marginTop = parseFloat(window.getComputedStyle(block).marginTop) || 0;
+        const marginBottom = parseFloat(window.getComputedStyle(block).marginBottom) || 0;
+        const totalBlockHeight = blockHeight + marginTop + marginBottom;
+
+        if (currentHeight + totalBlockHeight > pageHeightPx) {
+            const remainingSpace = pageHeightPx - currentHeight;
+            if (remainingSpace > 0) {
+                const spacer = document.createElement('div');
+                spacer.style.height = remainingSpace + 'px';
+                spacer.style.width = '100%';
+                spacer.className = 'pdf-spacer';
+
+                block.parentNode.insertBefore(spacer, block);
+                spacers.push(spacer);
+            }
+            currentHeight = totalBlockHeight;
+        } else {
+            currentHeight += totalBlockHeight;
+        }
+    });
 
     html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
         windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight
+        windowHeight: element.scrollHeight + (spacers.length * pageHeightPx)
     }).then(canvas => {
+        spacers.forEach(spacer => spacer.remove());
+        document.body.classList.remove('generating-pdf');
+
         const imgData = canvas.toDataURL('image/png');
 
         const { jsPDF } = window.jspdf;
@@ -364,10 +431,16 @@ function generatePDF() {
         let position = 0;
 
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+
+        // Embed hidden data
+        pdf.setTextColor(255, 255, 255); // White color
+        pdf.setFontSize(1); // Tiny font
+        pdf.text(hiddenDataString, 5, 5, { renderingMode: 'invisible' });
+
         heightLeft -= pageHeight;
 
         while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
+            position -= pageHeight;
             pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
             heightLeft -= pageHeight;
@@ -376,6 +449,71 @@ function generatePDF() {
         pdf.save(filename);
     }).catch(error => {
         console.error('Error generating PDF:', error);
+        const spacersToRemove = document.querySelectorAll('.pdf-spacer');
+        spacersToRemove.forEach(s => s.remove());
+        document.body.classList.remove('generating-pdf');
         alert('Error generating PDF. Please try again.');
     });
+}
+
+function triggerFileUpload() {
+    document.getElementById('pdf-upload').click();
+}
+
+async function handlePdfUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdf.getPage(1);
+        const textContent = await page.getTextContent();
+
+        // Concatenate all text items
+        const fullText = textContent.items.map(item => item.str).join('');
+
+        // Find the hidden data
+        const startMarker = '<<<DATA_START';
+        const endMarker = 'DATA_END>>>';
+
+        const startIndex = fullText.indexOf(startMarker);
+        const endIndex = fullText.indexOf(endMarker);
+
+        if (startIndex !== -1 && endIndex !== -1) {
+            const jsonString = fullText.substring(startIndex + startMarker.length, endIndex);
+            const data = JSON.parse(jsonString);
+
+            // Restore state
+            if (confirm('Found saved quotation data in PDF. Do you want to restore it? This will overwrite current data.')) {
+                sections = data.sections || [];
+                additionalCosts = data.additionalCosts || [];
+                negotiationAmount = data.negotiationAmount || 0;
+
+                // Restore customer name
+                const customerNameEl = document.getElementById('customerName');
+                if (customerNameEl && data.customerName) {
+                    customerNameEl.textContent = data.customerName;
+                }
+
+                // Restore negotiation input
+                const negotiationInput = document.getElementById('negotiation-amount');
+                if (negotiationInput) {
+                    negotiationInput.value = negotiationAmount;
+                }
+
+                render();
+                saveToLocalStorage();
+                alert('Quotation restored successfully!');
+            }
+        } else {
+            alert('Could not find any saved quotation data in this PDF.');
+        }
+    } catch (error) {
+        console.error('Error reading PDF:', error);
+        alert('Error reading PDF file. Please make sure it is a valid PDF generated by this app.');
+    }
+
+    // Reset input
+    input.value = '';
 }
